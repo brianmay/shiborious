@@ -19,12 +19,12 @@ def gen_password(length=16, chars=string.letters + string.digits):
 class index:
 
     def GET(self):
-        # Get Shiboroth attributes
+        # Get Shibboleth attributes
         try:
             email = web.ctx.env['mail']
         except:
             web.header("Content-Type","text/plain; charset=utf-8")
-            return "This website requires email. Your IdP is not releasing this attribute to this site. Please Talk to your IdP Admin."
+            return "This website requires email. Your IdP is not releasing this attribute to this site. Please talk to your IdP Admin."
         create_date = datetime.datetime.now()
         try:
             full_name = web.ctx.env['displayName']
@@ -33,7 +33,7 @@ class index:
                 full_name = web.ctx.env['cn']
             except:
                 web.header("Content-Type","text/plain; charset=utf-8")
-                return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please Talk to your IdP Admin."
+                return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please talk to your IdP Admin."
 
         # Does the user with this email address exist in our "database"?
         # note: if user exists in this file, we assume it also exists in gitorious.
@@ -46,8 +46,8 @@ class index:
                 found = True
                 password = u.split(':')[1].replace('\n','')
 
-        # No user already exists, we have to update gitorious database
         if not found:
+            # No existing user in users file
             # Check gitorious database
             conn = MySQLdb.connect (
                 host = settings.DB_HOST,
@@ -67,8 +67,8 @@ class index:
                 # User not found, we need to pick a login
                 id = None
                 login = email.replace('@','').replace('.','')
-            result = cursor.fetchone()
 
+            result = cursor.fetchone()
             # Paranoia check, if multiple users exist with same email address something has gone terrible wrong. Check
             # for monkeys in the telephone.
             if result is not None:
@@ -82,20 +82,20 @@ class index:
 
             # Add user if already exists or update existing user
             if id is None:
-                cursor.execute("""SELECT id FROM users WHERE login=%s""", (login, ))
+                cursor.execute("""SELECT id FROM users WHERE login=%s""", (login,))
                 result = cursor.fetchone()
                 if result is not None:
                     web.header("Content-Type","text/plain; charset=utf-8")
-                    return "Automatically picked login '%s' for new account is already in use"%(login,)
+                    return "Automatically picked login '%s' for new account is already in use" % (login,)
 
-                cursor.execute("""INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, "terms_accepted", 1, 1)""",(login, email, crypted_password, salt, create_date, create_date, create_date, full_name))
+                cursor.execute("""INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, "terms_accepted", 1, 1)""", (login, email, crypted_password, salt, create_date, create_date, create_date, full_name))
             else:
-                cursor.execute("""UPDATE users SET crypted_password=%s, salt=%s, updated_at=%s, fullname=%s WHERE id=%s""",(crypted_password, salt, create_date, full_name, id))
+                cursor.execute("""UPDATE users SET crypted_password=%s, salt=%s, updated_at=%s, fullname=%s WHERE id=%s""", (crypted_password, salt, create_date, full_name, id))
 
             # Did it work?
             if cursor.rowcount <= 0:
                 web.header("Content-Type","text/plain; charset=utf-8")
-                return "Cannot add/update userid '%s'"%(id,)
+                return "Cannot add/update userid '%s'"% (id,)
 
             # Close database connection
             conn.commit()
