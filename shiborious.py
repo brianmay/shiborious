@@ -25,6 +25,7 @@ class index:
         try:
             email = web.ctx.env['mail']
         except:
+            web.header("Content-Type","text/plain; charset=utf-8")
             return "This website requires email. Your IdP is not releasing this attribute to this site. Please Talk to your IdP Admin."
         login = email.replace('@','').replace('.','')
         create_date = datetime.datetime.now()
@@ -34,6 +35,7 @@ class index:
             try:
                 full_name = web.ctx.env['cn']
             except:
+                web.header("Content-Type","text/plain; charset=utf-8")
                 return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please Talk to your IdP Admin."
 
         found = False
