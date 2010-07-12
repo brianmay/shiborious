@@ -50,10 +50,6 @@ class index:
         if not found:
             password = gen_password()
 
-            f = open(settings.USER_FILE, 'a')
-            f.write("%s:%s\n" % (email, password))
-            f.close()
-
             salt = hashlib.sha1("--"+str(create_date)+"--"+login+"--").hexdigest()
             crypted_password = hashlib.sha1("--"+salt+"--"+password+"--").hexdigest()
 
@@ -72,6 +68,10 @@ class index:
             cursor.close()
             conn.close()
 
+            # Save password in plain text for future use
+            f = open(settings.USER_FILE, 'a')
+            f.write("%s:%s\n" % (email, password))
+            f.close()
 
         # We now have valid login and password for user, redirect to login page
         web.header("Content-Type","text/html; charset=utf-8")
