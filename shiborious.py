@@ -19,9 +19,7 @@ def gen_password(length=16, chars=string.letters + string.digits):
 class index:
 
     def GET(self):
-        f = open(settings.USER_FILE, 'r')
-        users = f.readlines()
-        f.close()
+        # Get Shiboroth attributes
         try:
             email = web.ctx.env['mail']
         except:
@@ -38,23 +36,27 @@ class index:
                 web.header("Content-Type","text/plain; charset=utf-8")
                 return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please Talk to your IdP Admin."
 
+        # Does the user with this email address exist in our "database"?
+        f = open(settings.USER_FILE, 'r')
+        users = f.readlines()
+        f.close()
         found = False
-
         for u in users:
             if u.startswith(email):
                 found = True
                 password = u.split(':')[1].replace('\n','')
-                
+
+        # No user already exists, we have to update gitorious database
         if not found:
             password = gen_password()
-            
+
             f = open(settings.USER_FILE, 'a')
             f.write("%s:%s\n" % (email, password))
             f.close()
-            
+
             salt = hashlib.sha1("--"+str(create_date)+"--"+login+"--").hexdigest()
             crypted_password = hashlib.sha1("--"+salt+"--"+password+"--").hexdigest()
-       
+
             SQL = """INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "terms_accepted", 1, 1)""" % (login, email, crypted_password, salt, create_date, create_date, create_date, full_name)
 
             conn = MySQLdb.connect (
@@ -65,10 +67,13 @@ class index:
 
             cursor = conn.cursor()
             cursor.execute(SQL)
+            # Close database connection
             conn.commit()
             cursor.close()
             conn.close()
-        
+
+
+        # We now have valid login and password for user, redirect to login page
         web.header("Content-Type","text/html; charset=utf-8")
         t = web.template.Template("""$def with (title, body)
 <html>
