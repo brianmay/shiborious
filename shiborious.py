@@ -25,7 +25,6 @@ class index:
         except:
             web.header("Content-Type","text/plain; charset=utf-8")
             return "This website requires email. Your IdP is not releasing this attribute to this site. Please Talk to your IdP Admin."
-        login = email.replace('@','').replace('.','')
         create_date = datetime.datetime.now()
         try:
             full_name = web.ctx.env['displayName']
@@ -37,6 +36,7 @@ class index:
                 return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please Talk to your IdP Admin."
 
         # Does the user with this email address exist in our "database"?
+        # note: if user exists in this file, we assume it also exists in gitorious.
         f = open(settings.USER_FILE, 'r')
         users = f.readlines()
         f.close()
@@ -56,13 +56,46 @@ class index:
                 db = settings.DB_NAME)
             cursor = conn.cursor()
 
+            # Try to find existing user
+            cursor.execute("""SELECT id,login FROM users WHERE email=%s""", (email, ))
+            result = cursor.fetchone()
+            if result is not None:
+                # User found, get details
+                id = result[0]
+                login = result[1]
+            else:
+                # User not found, we need to pick a login
+                id = None
+                login = email.replace('@','').replace('.','')
+            result = cursor.fetchone()
+
+            # Paranoia check, if multiple users exist with same email address something has gone terrible wrong. Check
+            # for monkeys in the telephone.
+            if result is not None:
+                web.header("Content-Type","text/plain; charset=utf-8")
+                return "Too many gitorious users matched email address!"
+
             # Create new password for user
             password = gen_password()
             salt = hashlib.sha1("--"+str(create_date)+"--"+login+"--").hexdigest()
             crypted_password = hashlib.sha1("--"+salt+"--"+password+"--").hexdigest()
 
-            SQL = """INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "terms_accepted", 1, 1)""" % (login, email, crypted_password, salt, create_date, create_date, create_date, full_name)
-            cursor.execute(SQL)
+            # Add user if already exists or update existing user
+            if id is None:
+                cursor.execute("""SELECT id FROM users WHERE login=%s""", (login, ))
+                result = cursor.fetchone()
+                if result is not None:
+                    web.header("Content-Type","text/plain; charset=utf-8")
+                    return "Automatically picked login '%s' for new account is already in use"%(login,)
+
+                cursor.execute("""INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, "terms_accepted", 1, 1)""",(login, email, crypted_password, salt, create_date, create_date, create_date, full_name))
+            else:
+                cursor.execute("""UPDATE users SET crypted_password=%s, salt=%s, updated_at=%s, fullname=%s WHERE id=%s""",(crypted_password, salt, create_date, full_name, id))
+
+            # Did it work?
+            if cursor.rowcount <= 0:
+                web.header("Content-Type","text/plain; charset=utf-8")
+                return "Cannot add/update userid '%s'"%(id,)
 
             # Close database connection
             conn.commit()
