@@ -48,21 +48,22 @@ class index:
 
         # No user already exists, we have to update gitorious database
         if not found:
-            password = gen_password()
-
-            salt = hashlib.sha1("--"+str(create_date)+"--"+login+"--").hexdigest()
-            crypted_password = hashlib.sha1("--"+salt+"--"+password+"--").hexdigest()
-
-            SQL = """INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "terms_accepted", 1, 1)""" % (login, email, crypted_password, salt, create_date, create_date, create_date, full_name)
-
+            # Check gitorious database
             conn = MySQLdb.connect (
                 host = settings.DB_HOST,
                 user = settings.DB_USER,
                 passwd = settings.DB_PASSWD,
                 db = settings.DB_NAME)
-
             cursor = conn.cursor()
+
+            # Create new password for user
+            password = gen_password()
+            salt = hashlib.sha1("--"+str(create_date)+"--"+login+"--").hexdigest()
+            crypted_password = hashlib.sha1("--"+salt+"--"+password+"--").hexdigest()
+
+            SQL = """INSERT INTO users (login, email, crypted_password, salt, created_at, updated_at, activated_at, fullname, aasm_state, public_email, wants_email_notifications) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "terms_accepted", 1, 1)""" % (login, email, crypted_password, salt, create_date, create_date, create_date, full_name)
             cursor.execute(SQL)
+
             # Close database connection
             conn.commit()
             cursor.close()
