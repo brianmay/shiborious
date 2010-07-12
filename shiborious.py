@@ -5,7 +5,7 @@ import datetime
 import hashlib
 import MySQLdb
 
-import settings
+from shiborious import settings
 
 urls = (
   '/', 'index'
@@ -89,12 +89,12 @@ $body
 
 
         form_body = """
- <form action="https://code.arcs.org.au/gitorious/sessions" method="post">
+ <form action="%s" method="post">
         <input id="email" name="email" type="hidden" value="%s"/>
         <input id="password" name="password" type="hidden" value="%s" />
         <input name="commit" type="submit" value="Continue" />
   </form>
-                """ % (email, password)
+                """ % (settings.FORM_URL, email, password)
             
         return t("Shibboleth Login", form_body)
             

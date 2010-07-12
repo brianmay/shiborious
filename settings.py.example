@@ -7,3 +7,4 @@ DB_USER = 'gitorious'
 DB_PASSWD = 'secret'
 DB_NAME = 'gitorious_production'
 
+FORM_URL = 'https://code.example.org/gitorious/sessions'
