@@ -1,7 +1,5 @@
 # Shiborious Settings
 
-USER_FILE = '/opt/shiborious/shib-users.txt'
-
 DB_HOST = 'localhost'
 DB_USER = 'gitorious'
 DB_PASSWD = 'secret'

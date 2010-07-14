@@ -35,19 +35,7 @@ class index:
                 web.header("Content-Type","text/plain; charset=utf-8")
                 return "This website requires either displayName or commonName. Your IdP is not releasing these attribute to this site. Please talk to your IdP Admin."
 
-        # Does the user with this email address exist in our "database"?
-        # note: if user exists in this file, we assume it also exists in gitorious.
-        f = open(settings.USER_FILE, 'r')
-        users = f.readlines()
-        f.close()
-        found = False
-        for u in users:
-            if u.startswith(email):
-                found = True
-                password = u.split(':')[1].replace('\n','')
-
-        if not found:
-            # No existing user in users file
+        if True:
             # Check gitorious database
             conn = MySQLdb.connect (
                 host = settings.DB_HOST,
@@ -101,11 +89,6 @@ class index:
             conn.commit()
             cursor.close()
             conn.close()
-
-            # Save password in plain text for future use
-            f = open(settings.USER_FILE, 'a')
-            f.write("%s:%s\n" % (email, password))
-            f.close()
 
         # We now have valid login and password for user, redirect to login page
         web.header("Content-Type","text/html; charset=utf-8")
